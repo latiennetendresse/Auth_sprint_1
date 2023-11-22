@@ -1,3 +1,73 @@
+# Запуск приложения
+
+Скопируйте `.env.example` в `.env` и задайте свои значения переменных окружения.
+
+Для запуска auth-service, PostgreSQL, Redis и Nginx можно использовать команду:
+
+`docker compose up --build`
+
+После запуска должна открываться страница с документацией [http://127.0.0.1/api/openapi](http://127.0.0.1/api/openapi)
+
+Для добавления пользователя с ролью `admin` из консоли можно воспользоваться командой:
+
+`docker exec -it -e PYTHONPATH=. auth_sprint_1-auth-service-1 python cli/create_admin.py`
+
+# Запуск тестов
+
+Для запуска всех тестов можно использовать команду:
+
+`docker compose -f auth-service/tests/functional/docker-compose.yml --env-file .env up --build --abort-on-container-exit --exit-code-from tests`
+
+Для запуска отдельных тестов можно указать файл или конкретный тест при помощи переменной `TESTS`, например:
+
+`TESTS=src/test_register.py::test_register docker compose -f auth-service/tests/functional/docker-compose.yml --env-file .env up --build --abort-on-container-exit --exit-code-from tests`
+
+# Процесс разработки
+
+## Зависимости
+
+Зависимости в [auth-service/requirements](auth-service/requirements) разделены на базовые [base.txt](auth-service/requirements/base.txt) (необходимые для работы сервиса) и дополнительные, используемые в процессе разработки.
+
+Для установки полного набора можно использовать команду:
+
+`pip install -r auth-service/requirements/dev.txt`
+
+Зависимости для запуска тестов хранятся отдельно:
+
+`pip install -r auth-service/tests/functional/requirements.txt`
+
+## Pre-commit
+
+Для установки автоматических проверок кода (flake8, isort) перед коммитом можно использовать команду:
+
+`pre-commit install`
+
+## Миграции PostgreSQL
+
+Для работы с миграциями используется [Alembic](https://alembic.sqlalchemy.org/). 
+
+Миграции хранятся в папке [auth-service/src/alembic/versions](auth-service/src/alembic/versions).
+
+Создать новую миграцию миграцию можно следующим образом:
+
+```bash
+# Запустить Postgres
+docker run -d --name postgres -p 5432:5432 -e POSTGRES_USER=user -e POSTGRES_PASSWORD=pass -e POSTGRES_DB=db postgres:13.10-alpine
+
+cd auth-service/src
+
+# Применить уже имеющиеся миграции
+alembic upgrade head
+# Сгенерировать заготовку под новую миграцию
+alembic revision --autogenerate -m "message"
+```
+
+Дальше надо посмотреть и при необходимости доработать автоматически созданнуб миграцию, как описано в [документации Alembic](https://alembic.sqlalchemy.org/en/latest/autogenerate.html). 
+
+Также имеет смысл прогнать сгенерированную миграцию через автоформатирование:
+
+`autopep8 --in-place auth-service/src/alembic/versions/*.py`
+
 # Проектная работа 6 спринта
 
 С этого модуля вы больше не будете получать чётко расписанное ТЗ, а задания для каждого спринта вы найдёте внутри уроков. Перед тем как начать программировать, вам предстоит продумать архитектуру решения, декомпозировать задачи и распределить их между командой.
